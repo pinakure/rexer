@@ -1,4 +1,5 @@
 import pygame 
+from filesys import FileMan
 import audio
 from app import App
 
@@ -37,14 +38,24 @@ class EventHandler:
                 if   key=='bpm': 
                     x_limitada = max(w.x, min(mouse_x, w.x + SLIDERS[key].width))
                     porcentaje_slider = (x_limitada - w.x) / SLIDERS[key].width
-                    bpm_actual = w.min + porcentaje_slider * (w.max - w.min)
-                    App.rex_dll.REXSetPreviewTempo(manejador_rex, int(bpm_actual * 1000))
+                    App.rex.bpm = w.min + porcentaje_slider * (w.max - w.min)
+                    App.rex_dll.REXSetPreviewTempo(manejador_rex, int(App.rex.bpm * 1000))
                     return True
                 elif key=='pitch': 
                     x_limitada = max(w.x, min(mouse_x, w.x + SLIDERS[key].width))
                     porcentaje_slider = (x_limitada - w.x) / SLIDERS[key].width
-                    pitch_semitones = int(round(w.min + porcentaje_slider * (w.max - w.min)))
+                    App.rex.pitch = int(round(w.min + porcentaje_slider * (w.max - w.min)))
                     return True
+                
+        for key,w in FileMan.scrollbars.items():
+            if w.handle( event ) and w.drag: 
+                if key=='dir': 
+                    return True
+                elif key=='file': 
+                    return True
+                        
+        if FileMan.handle(App, event ):
+            return True
                         
         kind = event.type
         if   kind == pygame.QUIT: return False
@@ -84,14 +95,13 @@ class EventHandler:
         elif event.type == pygame.KEYDOWN:
             paso_base = 0.1 if (pygame.key.get_mods() & pygame.KMOD_SHIFT) else 1.0
 
-            if event.key == pygame.K_SPACE:
-                if audio.esta_reproduciendo():
-                    audio.stop()
-                else:
-                    bucle = True if (pygame.key.get_mods() & pygame.KMOD_SHIFT) else False
-                    audio.play(0, muestras_actuales, loop=bucle)
-            
-            elif event.key == pygame.K_RETURN:
+            #if event.key == pygame.K_SPACE:
+            #    if audio.esta_reproduciendo():
+            #        audio.stop()
+            #    else:
+            #        bucle = True if (pygame.key.get_mods() & pygame.KMOD_SHIFT) else False
+            #        audio.play(0, muestras_actuales, loop=bucle)
+                        
+            if event.key == pygame.K_RETURN:
                 return False
-                
         return True                    
