@@ -15,7 +15,7 @@ def main(archivo_entrada, bpm=120.0):
     App.init(pygame)
     App.rex     = REXPlayer(archivo_entrada, bpm)
     ui          .create()
-    FileMan.init( pygame )
+    FileMan.init( pygame, App )
     App.stream.start()
     while App.run:
         App.update()

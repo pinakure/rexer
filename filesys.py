@@ -97,15 +97,17 @@ class FileMan:
     dir_box     = None
     dir_knob    = None
     scrollbars  = {}
+    app         = None
     
     ultimo_clic_tiempo = 0
     ultimo_clic_index  = -1
     
-    def init( pygame ):
-        FileMan.scrollbars['file'    ]= ScrollBar(pygame, FileMan.file_x+FileMan.width-14, FileMan.y - 9, 204, 0)
-        FileMan.scrollbars['dir'     ]= ScrollBar(pygame, FileMan.file_x-39              , FileMan.y + 2, 192, 0)
-        FileMan.file_box    = pygame.Rect(FileMan.file_x, FileMan.y-3, FileMan.width-20, 27) 
-        FileMan.dir_box     = pygame.Rect(FileMan.file_x-389, FileMan.y-3, 344, 27) 
+    def init( pygame, app ):
+        FileMan.scrollbars['file'    ]  = ScrollBar(pygame, FileMan.file_x+FileMan.width-14, FileMan.y - 9, 204, 0)
+        FileMan.scrollbars['dir'     ]  = ScrollBar(pygame, FileMan.file_x-39              , FileMan.y + 2, 192, 0)
+        FileMan.file_box                = pygame.Rect(FileMan.file_x, FileMan.y-3, FileMan.width-20, 27) 
+        FileMan.dir_box                 = pygame.Rect(FileMan.file_x-389, FileMan.y-3, 344, 27) 
+        FileMan.app                     = app
         FileMan.navigate( FileMan.root )
                      
     def navigate(folder):
@@ -122,7 +124,8 @@ class FileMan:
                 if elemento.is_dir():
                     FileMan.entries.append(FileEntry(FileEntry.TYPE_FOLDER, elemento.name))
                 elif elemento.is_file():
-                    FileMan.entries.append(FileEntry(FileEntry.TYPE_FILE, elemento.name))
+                    if os.path.splitext(elemento.name)[1]=='.rx2':
+                        FileMan.entries.append(FileEntry(FileEntry.TYPE_FILE, elemento.name))
             
             FileMan.entries.sort(key=lambda x: (x.filename != "..", x.type != FileEntry.TYPE_FOLDER, x.filename.lower()))
         except PermissionError:
@@ -255,7 +258,8 @@ class FileMan:
                 
                 if indice_real < len(archivos):
                     FileMan.file_index = linea_clicada
-                    print([x for x in FileMan.entries if x.type == FileEntry.TYPE_FILE][FileMan.file_index+FileMan.file_scroll].filename)
+                    file = [x for x in FileMan.entries if x.type == FileEntry.TYPE_FILE][FileMan.file_index+FileMan.file_scroll].filename
+                    FileMan.app.rex.load(os.path.join(FileMan.root, file))
                     FileMan.update()
                     return True
                     

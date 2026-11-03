@@ -57,8 +57,8 @@ class REXPlayer(object):
         self.buf_r_pitched              = np.zeros(self.BLOCK_SIZE, dtype=np.float32)
         
         self.loadDLL()
+        self.initDLL()                
         self.load(filename)
-        self.process()
         
     def loadDLL(self):
         try:
@@ -89,12 +89,11 @@ class REXPlayer(object):
             
     def load(self, filename):
         self.filename = filename
-        self.initDLL()
         try:
             with open( filename, "rb" ) as f:
                 self.data       = f.read()        
                 self.filesize   = len( self.data )
-
+            self.process()
         except FileNotFoundError:
             print(f"Archivo no encontrado: {filename}")
             self.deinitDLL()
@@ -255,7 +254,7 @@ class REXPlayer(object):
             nuevo_slice.surf_normal = surf_n
             nuevo_slice.surf_active = surf_a
             self.slices.append(nuevo_slice)
-
+        
         App.rex_dll = self.dll
         App.stream  = stream
         
