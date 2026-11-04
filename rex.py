@@ -100,14 +100,46 @@ class REXPlayer(object):
             return
         
     def process(self):
-        if self.manager: 
-            App.rex_dll.REXStopPreview(self.manager)
-            App.rex_dll.REXDelete(ctypes.byref(self.manager))
-        self.manager    = c_void_p(0)
-    
-        if self.dll.REXCreate(ctypes.byref(self.manager), self.data, self.filesize, None, None) != 1:
+        # 1. Detener y liberar el stream anterior
+        stream_anterior = getattr(App, "stream", None)
+        reanudar_audio = False
+
+        if stream_anterior is not None:
+            reanudar_audio = stream_anterior.active
+
+            try:
+                stream_anterior.stop()
+            except Exception:
+                pass
+
+            try:
+                stream_anterior.close()
+            except Exception:
+                pass
+
+        # 2. Destruir el objeto REX anterior
+        if self.manager and self.manager.value:
+
+            self.dll.REXStopPreview(self.manager)
+            self.dll.REXDelete(ctypes.byref(self.manager))
+
+        self.manager = c_void_p(0)
+
+        # 3. Liberar las estructuras gráficas anteriores
+        self.formas_de_onda.clear()
+        self.slices.clear()
+        self.mapa_slices_ppq.clear()
+
+        # 4. Crear el nuevo objeto REX
+        if self.dll.REXCreate(
+            ctypes.byref(self.manager),
+            self.data,
+            self.filesize,
+            None,
+            None
+        ) != 1:
+
             print("Error al crear el objeto REX.")
-            self.deinitDLL()
             return
     
         info = REXInfo()
@@ -256,7 +288,11 @@ class REXPlayer(object):
             self.slices.append(nuevo_slice)
         
         App.rex_dll = self.dll
-        App.stream  = stream
+        App.stream = stream
+
+        # Si ya estaba reproduciendo, continuar automáticamente
+        if reanudar_audio:
+            App.stream.start()
         
     def bind(self):
         self.dll.REXInitializeDLL.argtypes       = []
@@ -330,8 +366,31 @@ class REXPlayer(object):
         App.screen.blit(txt_slice   , App.labels['slice'].position)
 
     def destroy(self):
-        App.rex_dll.REXStopPreview(self.manager)
-        App.rex_dll.REXDelete(ctypes.byref(self.manager))
-        App.rex_dll.REXUninitializeDLL()
-        App.stream.stop()
-        App.stream.close()
+        # Primero detener el audio
+        stream = getattr(App, "stream", None)
+
+        if stream is not None:
+            try:
+                stream.stop()
+            except Exception:
+                pass
+
+            try:
+                stream.close()
+            except Exception:
+                pass
+
+            App.stream = None
+
+        # Después destruir REX
+        if self.manager and self.manager.value:
+            self.dll.REXStopPreview(self.manager)
+            self.dll.REXDelete(ctypes.byref(self.manager))
+            self.manager = c_void_p(0)
+
+        # Finalmente liberar la DLL
+        self.dll.REXUninitializeDLL()
+
+        self.formas_de_onda.clear()
+        self.slices.clear()
+        self.mapa_slices_ppq.clear()
